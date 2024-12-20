@@ -1,0 +1,154 @@
+#=====================================================================
+#    CHIMERE Modeling System Configuration file
+#    For model code & data downloads, updates, news, and documentation
+#    see http://www.lmd.polytechnique.fr/chimere
+#=====================================================================
+#
+# List the simulations to run separated by whitespace in the next line:
+#-----------------------------
+      runs :  1
+#-----------------------------
+#---------------------------------------------
+#  Separate parameters for multiple runs with commas, e.g., Nested... : no, yes
+#  If there are less values than run number (e.g., 2 columns but run 3 is requested) -> last given value is used
+#  So be careful!
+#---------------------------------------------
+   # Date/Time management
+   [$forecast] Forecast(1) or analysis(0) run                  : 1
+   [$di]       CHIMERE run Start Date                          : 20180115
+   [$hour]     CHIMERE run Start hour                          : 03
+   [$nhours]   CHIMERE run Duration (0 = auto)                 : 24
+   [$de]       CHIMERE run End Date (0 = auto)                 : 0
+   [$endhour]  CHIMERE run End hour (0 = auto)                 : 03
+
+   # CHIMERE Simulation Domain
+   [$nested]               Nested run? (yes/no)                : no
+   [$dom]                  CHIMERE domain                      : GAL3
+   [$nzdoms]               Number of parallel zonal subdomains : 6 #9
+   [$nmdoms]               Number of parallel merid subdomains : 4 #8
+   [$nlevels]              Number of vertical layers           : 9
+   [$top_chimere_pressure] Top layer pressure (mbar)           : 500
+   [$first_layer_pressure] First layer pressure (sigma * 1e3)  : 997
+
+   # Meteorology Driver
+   [$meteo]    Meteo driver (WRF,MM5,ecm)                      : WRF
+   [$metdom]   Meteo driver domain                             : d03
+
+   # Simulation Output Files
+   [$lab]      Simulation label                                : gal3
+   [$clab]     Coarse domain label                             : none
+   [$accur]    Output species detailed (low/full)              : low
+   [$nsconcs]  Conc. save freq. (hr), file end...              : 24
+   [$nsdepos]  if >1 Cumulated deposition, file dep...         : 2
+   [$sim]      Current run label (output files' ending)        : ${di}${hour}_${dehour}_${lab}
+
+   # Emissions
+   [$emis]               Anthropogenic emission source         : emep
+   [$surface_emissions]     Use surface emissions? (1/0)       : 1
+   [$point_emissions]       Use point emissions?   (1/0)       : 0
+   [$fire_emissions]        Use fire emissions?    (1/0)       : 0
+   [$iusebemis]             Need biogenic emissions? (1/0)     : 1
+   [$iusedust]              Mineral dust emissions? (0/1)      : 1
+   [$icuth]              u* threshold estimation                : 1
+   [$ifluxv]             saltation/sandblasting scheme        : 2
+   [$ifecan]             Use of soil moisture [1] or not [0]   : 1
+
+   # Boundary conditions
+   # 0 - do not use; 1 - use and build; 2 - check if files exist and build only
+   [$iusebound]  Use and build Boundary conditions?            : 1
+   [$iuseini]  Use and build Initial conditions?               : 1
+   [$glob_top_conc] Use global top conc? (when same vert grid) : 0
+
+   # Chemistry Options
+   [$mecachim]  Chemistry mechanism (0..3)                     : 1
+   [$aero]      Chemically-active aerosols (1/0)               : 1
+   [$nbins]     Number of aerosol size sections                : 10
+   [$seasalt]   Include sea salts? (1/0)                       : 1
+   [$isaltp]    Sea-salt emission parameterization (0..2)      : 0
+   [$carb]      Include carboneceous species?                  : 1
+   [$soatyp]    Secondary organic aerosol scheme (0..2)        : 2
+   [$trc]       Include tracers?                               : 0
+   [$nequil]    ISORROPIA coupling (1) / tabulation (0)        : 0
+   [$npeq]      - equilibrium calc freq (phys steps, < 5)      : 1
+
+   # Physics options
+   [$iadrydep]  Aero dry deposition (1=Wesely, 2=Zhang)        : 2
+   [$resusp]      Resuspension [1] or not [0]                  : 0
+
+   # Numerical solution parameters
+   [$dtphys]      Physical time steps (in mn)                  : 10, 5
+   [$dtchem]      Chemical time step (in mn)                   : 5
+   [$ngs]       Number of Gauss-Seidel iterations              : 1
+   [$nsu]        - during spinup                               : 5
+   [$irs]        - number of spinup hours                      : 1
+   [$iadv]      Advection scheme (0..2)                        : 2
+   [$iadvv]     Vertical advection scheme (0..1)               : 1
+
+   # CHIMERE Subgrid Processes
+   [$ideepconv]   Deep convection activation (1/0)             : 1
+   [$urbancorr]   Urban correction [1] or not [0]              : 0
+
+   # Diagnostics parameters
+   [$ilidar]      Lidar profiles [1] or not [0]                : 0
+
+   # Flags whether to run individual dynamic interfaces and the Core
+   [$imakechemprep] Make chemical input data (0-2)     : 2
+   [$istopchemprep] Make chemical input data and exit  : 0
+   [$imakemeteo]  Run meteo interface? (0-2)           : 2
+   [$imakeaemis]  Build anthropogenic emissions? (0-2) : 1
+   [$imakefemis]  Build fire emissions? (0-2)          : 0
+   [$imakerun]    Run Chemistry-Transport? (0-1)       : 1
+   [$chimverb]    Print on screen verbose or not [0:5] : 5
+
+   #---------------------------------------------------------------------------------------------
+   #         Directories and files (Absolute PATHs here! No stuff like ../../OUTPUTS !!)
+   #---------------------------------------------------------------------------------------------
+
+   # ---------------- Simulation Output -----------------
+   [$simuldir]      Simulation output                        : /mnt/lustre/scratch/newhome/xunta/rai/ba/OP/PRED/chimere2017r4
+   [$csimuldir]     Course run output (for nested run BC)    : /mnt/lustre/scratch/newhome/xunta/rai/ba/OP/PRED/chimere2017r4
+   [$psimuldir]     Previous run output (if continue)        : $simuldir
+
+   # ------------------- Static Data ------------------------
+
+   [$bigfilesdir]   Big files (AEROMIN.nc, etc)                            : /mnt/lustre/scratch/newhome/xunta/rai/ba/OP/DATOS/CICC/chimere2017r4
+   [$iland_cover]   Land Cover Globcover(2)/USGS(3)                        : 3
+   [$landcover_dir] Land Cover directory                                   : ${bigfilesdir}/LANDCOVER
+   [$megan_data]    MEGAN data root                                        : ${bigfilesdir}/MEGAN
+   [$bcdir]         Boundary conditions                                    : ${bigfilesdir}
+   [$bcgas]         BC Gaseous Species                                     : MACC #
+   [$bcgasdt]       No gas bc (0), Climatological (1) or time varying  (2) : 2
+   [$bcaer]         BC non-dust  Aerosols                                  : MACC #
+   [$bcaerdt]       No aer bc (0), Climatological (1) or time varying  (2) : 2
+   [$bcdust]        BC Dusts                                               : MACC
+   [$bcdustdt]      No dust bc (0), Climatological (1), time varying  (2)  : 2
+
+   # ------------- Dynamic Pre-processors' Data  ------------
+
+   ## --------------- INPUT -----------------------------------
+   [$meteo_DIR]        Meteo driver output dir               : /mnt/lustre/scratch/newhome/xunta/rai/ba/SWEN/WRF_TEST/${di}/00
+   [$meteo_file]       Meteo file                            : wrfout_d03_$(date -u -d "${di}" +%Y%m%d)_0000.nc
+   #[$wrf_geog]         Where is geog from WRF                : # ${meteo_DIR}/geo_em_${metdom}.nc
+   [$emissdir]         Anthropic emission Dir (from Stage 1) : ${bigfilesdir}/EMISSIONS/galicia_2008
+   [$fire_emissdir]    FIRE emission Dir (from Stage 1)      : ${bigfilesdir}/FIREMIS
+
+   ## --------------- OUTPUT (and possibly input for future runs)
+   [$datadir]          Pre-processors input/output directory : ${simuldir}/data_${dom}_${lab}
+   [$metdir]           Dir to store exdomout file            : ${meteo_DIR}/exdomout.${dom}
+   [$fnmeteo]          Meteo out file on chimere 3D grid     : ${simuldir}/meteo.${sim}.nc
+   [$exdomout]         METEO file name                       : ${metdir}/exdomout.${sim}.nc
+   [$aemisdir]         Dir to store anthrpc emiss (stage 2)  : ${datadir}
+   [$fnemisa]          Anthropic emiss. File (from Stage 2)  : ${aemisdir}/AEMISSIONS.${sim}.nc
+   [$fnemisf]          Fires emiss. File (from Stage 2)      : ${datadir}/FEMISSIONS.${sim}.nc
+   [$fnemisb]          Biogenic emission File                : ${datadir}/BEMISSIONS.${sim}.nc
+   [$fnemissalt]       Sea salt emission File                : ${datadir}/SEMISSIONS.${sim}.nc
+   [$fnemisd]          Dust emission File                    : ${datadir}/DEMISSIONS.${sim}.nc
+   # Please make sure that $iniboundir is the same for the coarse and all nested runs !!
+   [$iniboundir]       Dir to store INI/BOUND files          : ${simuldir}/INIBOUN.${nbins}
+
+   # ------------ Miscellaneous -----------------------------
+   [$garbagedir]       Log files (compilation)               : ${chimere_root}/compilogs
+   [$clean]            Clean mode                            : full # full, light, or none
+
+
+

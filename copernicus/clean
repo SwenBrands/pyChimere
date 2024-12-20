@@ -1,0 +1,22 @@
+#!/bin/bash
+rm -f `find -iname "*.bck"` 
+rm -f `find -iname "*.o"`
+rm -f `find -iname "*.e"`
+rm -f `find -iname "*.a"`
+rm -f `find -iname "*.mod"`
+rm -f `find -iname "core"`
+rm -f `find -name ".gmtcommands4"`
+rm -f chimere*par*.sh*
+rm -f *.out *.log *.aux
+if [ "$1" = "all" ]; then
+   lst=`ls -d tmp* 2>/dev/null`
+   for di in ${lst}; do
+      [ -d ${di} ] && { echo "removing ${di}...";  rm -rf ${di}; }
+   done
+   rm -rf chemprep/inputdata.*
+   rm -rf ./exe_*
+fi
+echo "Remaining .nc files:"
+find -iname "*.nc"
+echo -n "Total directory space: "
+du -sh .

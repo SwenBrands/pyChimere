@@ -1,0 +1,160 @@
+# -*- coding: utf-8 -*-
+
+#load python packages
+import numpy as np
+import os
+import xarray as xr
+from mpl_toolkits.basemap import Basemap
+import pandas as pd
+import os
+import sys
+import matplotlib
+matplotlib.use('Agg')
+from matplotlib import pyplot as plt
+import matplotlib.colors as colors
+from math import radians, cos, sin, asin, sqrt
+import csv
+import shutil
+
+## set input paths #####################################################
+lustre = os.getenv('LUSTRE')
+home = os.getenv('HOME')
+runpath = home+'/OP/LANZAR/chimere2017r4/emissions'
+execfile(runpath+'/haversine.py')
+srcpath = lustre+'/SWEN/chimere2020r1/emiSURF2020/annual-EMEP01x01/preproc'
+emisfolder = 'EMEP2018_reduced' #folder containing the emission files
+makeyear = 2020 #year the emission files were made
+validyear = 2018 #year for which the emission files are valid
+
+## set input parameters ################################################
+#variables = ['NOx','NH3','PMcoarse','PM10','NMVOC','CO','SOx','PM2_5']
+variables = ['NOx']
+tarlat = [43, 42.5] #latitude of the location
+tarlon = [-9, -8.5] #longitude of the location
+scalefactor = [0.5, 0.1] #set estimated reduction factor for each location
+activities = ['B_Industry'] #set activity abbreviations as set in the filenames
+startind = 5 #index rank of the first data row in the input txt files, may change for different versions of the EMEP inventory
+
+#mapping options
+plotmap = 'yes'
+latlims = [42.,44.]
+lonlims = [-9.5,-8.]
+colormap = 'jet'
+shapefile_path = home+'/OP/LANZAR/chimere2017r4/figures/shapes'
+
+## EXECUTE #############################################################
+#load the txt files
+for vv in list(range(len(variables))):
+    #copy the national totals file for this variable
+    ifile_tot_path_orig = srcpath+'/'+emisfolder+'/'+variables[vv]+'_'+str(makeyear)+'_GRID_'+str(validyear)+'/'+variables[vv]+'_NT_'+str(makeyear)+'_GRID_'+str(validyear)+'.txt'
+    ifile_tot_path = srcpath+'/'+emisfolder+'/'+variables[vv]+'_'+str(makeyear)+'_GRID_'+str(validyear)+'/modified_'+variables[vv]+'_NT_'+str(makeyear)+'_GRID_'+str(validyear)+'.txt'
+    shutil.copy(ifile_tot_path_orig,ifile_tot_path)
+    #Then modify the sector files and subtract the difference from the national emissions file
+    for aa in list(range(len(activities))):
+        for ll in list(range(len(tarlat))):
+            #load inventory file for this variable and activity
+            ifile_path = srcpath+'/'+emisfolder+'/'+variables[vv]+'_'+str(makeyear)+'_GRID_'+str(validyear)+'/'+variables[vv]+'_'+activities[aa]+'_'+str(makeyear)+'_GRID_'+str(validyear)+'.txt'
+            ifile = open(ifile_path, "rb")
+            reader = csv.reader(ifile, delimiter=';')
+            #create a list containing the csv's rows 
+            emisinv=[]
+            for row in reader:
+                #print row
+                emisinv.append(row)
+            ifile.close()
+            del(row,reader,ifile,ifile_path)
+            #get lats, lons, units and values from the inventory file
+            emisinv_lon = np.array([np.float(emisinv[ii][4]) for ii in list(range(startind,len(emisinv)))])
+            emisinv_lat = np.array([np.float(emisinv[ii][5]) for ii in list(range(startind,len(emisinv)))])
+            emisinv_unit = [emisinv[ii][6] for ii in list(range(startind,len(emisinv)))]
+            emisinv_value = np.array([np.float(emisinv[ii][7]) for ii in list(range(startind,len(emisinv)))])
+            #search nearest neighbour cell in the EMEP grid
+            distances = [haversine(tarlon[ll],tarlat[ll],emisinv_lon[ii],emisinv_lat[ii]) for ii in list(range(len(emisinv_lon)))]
+            distances = np.array(distances)
+            mindist = np.min(distances)
+            mindist_id = np.argmin(distances)
+            #change emission flux for the identified nearest neighbour
+            origval = np.float(emisinv[5+mindist_id][7])
+            tarval = np.float(emisinv[5+mindist_id][7])*scalefactor[aa]
+            tardiff = origval - tarval
+            
+            #print the output
+            print('Reduce '+variables[vv]+' for '+activities[aa])
+            print('CASE ' + str(ll)+':')
+            print('Changing emission flux from '+str(origval)+' to '+str(tarval))
+            print('at lon '+str(emisinv_lon[mindist_id])+' and lat '+str(emisinv_lat[mindist_id]))
+            emisinv[5+mindist_id][7] = str(tarval)
+            
+            #then save the results in txt format
+            outputfile = srcpath+'/'+emisfolder+'/'+variables[vv]+'_'+str(makeyear)+'_GRID_'+str(validyear)+'/modified_'+variables[vv]+'_'+activities[aa]+'_'+str(makeyear)+'_GRID_'+str(validyear)+'.txt'
+            dataframe = pd.DataFrame(emisinv)
+            dataframe.to_csv(outputfile,index=False,header=False,sep=';')
+            del(outputfile,dataframe)
+            
+            ##SWITCH TO NATIONAL TOTALS ###############################################################################################################################################
+            #load national totals file, substract reduction obtained from the previous step and save as csv
+            ifile_tot = open(ifile_tot_path, "rb")
+            reader = csv.reader(ifile_tot, delimiter=';')
+            #create a list containing the csv's rows 
+            nattotals=[]
+            for row in reader:
+                #print row
+                nattotals.append(row)
+            ifile_tot.close()
+            del(row,reader,ifile_tot)
+            #get lats, lons, units and values from the national totals file
+            nattotals_lon = np.array([np.float(nattotals[ii][4]) for ii in list(range(startind,len(nattotals)))])
+            nattotals_lat = np.array([np.float(nattotals[ii][5]) for ii in list(range(startind,len(nattotals)))])
+            nattotals_unit = [nattotals[ii][6] for ii in list(range(startind,len(nattotals)))]
+            nattotals_value = np.array([np.float(nattotals[ii][7]) for ii in list(range(startind,len(nattotals)))])
+            #search nearest neighbour cell in the EMEP grid
+            distances = [haversine(tarlon[ll],tarlat[ll],nattotals_lon[ii],nattotals_lat[ii]) for ii in list(range(len(nattotals_lon)))]
+            distances = np.array(distances)
+            mindist = np.min(distances)
+            mindist_id = np.argmin(distances)
+            #subtracting emission reduction at that grid-box
+            origval = np.float(nattotals[5+mindist_id][7])
+            tarval = np.float(nattotals[5+mindist_id][7])-tardiff
+            
+            #print the output
+            print('Subtracting emission flux '+str(origval)+' - '+str(tardiff)+ ' = '+str(tarval))
+            print('at lon '+str(nattotals_lon[mindist_id])+' and lat '+str(nattotals_lat[mindist_id]))
+            print('----------------------------------------------------------------')
+            nattotals[5+mindist_id][7] = str(tarval)
+            
+            #then save the results in txt format
+            dataframe = pd.DataFrame(nattotals)
+            dataframe.to_csv(ifile_tot_path,index=False,header=False,sep=';')
+
+    #optionally map the target concentrations
+    if plotmap == 'yes':
+        ##Then plot this grid (only once per variable and activity)
+        #getind = np.where((emisinv_lon >= lonlims[0]) & (emisinv_lon <= lonlims[1]) & (emisinv_lat >= latlims[0]) & (emisinv_lat <= latlims[1]))[0]
+        #emisinv_lon_red = emisinv_lon[getind]
+        #emisinv_lat_red = emisinv_lat[getind]
+        #emisinv_value_red = emisinv_value[getind]
+        XX,YY = np.meshgrid(np.unique(emisinv_lon),np.unique(emisinv_lat))
+        #init regular emissions grid for this regions, look for matches and fill (values not found remain 0)
+        ZZ = np.zeros(XX.shape)
+        for ii in list(range(XX.shape[0])):
+            for jj in list(range(XX.shape[1])):
+                tarind = np.where((emisinv_lon == XX[ii,jj]) & (emisinv_lat == YY[ii,jj]))[0]
+                if np.size(tarind) > 0:
+                   ZZ[ii,jj] = emisinv_value[tarind]
+                        
+        fig1 = plt.figure()
+        mymap = Basemap(projection='cyl', resolution='i', llcrnrlon=lonlims[0],llcrnrlat=latlims[0],urcrnrlon=lonlims[1],urcrnrlat=latlims[1])   
+        #mymap.pcolormesh(X,Y, tarval, cmap=colormap, latlon=True, vmin=np.array(cbounds[0]), vmax=np.array(cbounds[-1]))
+        mymap.pcolormesh(XX, YY, ZZ, cmap=colormap, latlon=True)
+        mymap.readshapefile(shapefile_path+'/municipios', 'municipios',linewidth=0.5, color='k', antialiased=1)
+        mymap.readshapefile(shapefile_path+'/espana', 'espana',linewidth=0.5, color='k', antialiased=1)
+        mymap.readshapefile(shapefile_path+'/portugal', 'portugal',linewidth=0.5, color='k', antialiased=1)               
+        #plot locations of the emitting facilities
+        plt.plot(tarlon,tarlat,'kX')
+        #figure finetuning
+        cbar = mymap.colorbar(shrink=0.8)
+        plt.title('EMEP '+str(validyear)+', '+variables[vv]+', '+activities[aa])
+        savename = srcpath+'/figs/EMEP_'+str(validyear)+'_'+variables[vv]+'_'+activities[aa]+'.png'
+        fig1.savefig(savename, dpi=300)
+        plt.close(fig1)
+    

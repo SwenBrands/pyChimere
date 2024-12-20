@@ -1,0 +1,74 @@
+# -*- coding: utf-8 -*-
+
+#load python packages
+import numpy as np
+import os
+import xarray as xr
+from mpl_toolkits.basemap import Basemap
+import pandas as pd
+import os
+import sys
+import matplotlib
+matplotlib.use('Agg')
+from matplotlib import pyplot as plt
+import matplotlib.colors as colors
+from math import radians, cos, sin, asin, sqrt
+import csv
+
+## set input paths #####################################################
+lustre = os.getenv('LUSTRE')
+home = os.getenv('HOME')
+runpath = home+'/OP/LANZAR/chimere2017r4/emissions'
+execfile(runpath+'/haversine.py')
+srcpath = lustre+'/SWEN/chimere2020r1/emiSURF2020/annual-EMEP01x01/preproc'
+emisfolder = 'EMEP2018_reduced' #folder containing the emission files
+makeyear = 2020 #year the emission files were made
+validyear = 2018 #year for which the emission files are valid
+
+## set input parameters ################################################
+#variables = ['NOx','NH3','PMcoarse','PM10','NMVOC','CO','SOx','PM2_5']
+variables = ['NOx']
+tarlat = [43, 42.5] #latitude of the location
+tarlon = [-9, -8.5] #longitude of the location
+scalefactor = [0.5, 0.1] #set estimated reduction factor for each location
+activities = ['B_Industry'] #set activity abbreviations as set in the filenames
+startind = 5 #index rank of the first data row in the input txt files, may change for different versions of the EMEP inventory
+
+## EXECUTE #############################################################
+#load the txt files
+for vv in list(range(len(variables))):
+	for aa in list(range(len(activities))):
+		for ll in list(range(len(tarlat))):
+			#load inventory file for this variable and activity
+			ifile_path = srcpath+'/'+emisfolder+'/'+variables[vv]+'_'+str(makeyear)+'_GRID_'+str(validyear)+'/'+variables[vv]+'_'+activities[aa]+'_'+str(makeyear)+'_GRID_'+str(validyear)+'.txt'
+			ifile = open(ifile_path, "rb")
+			reader = csv.reader(ifile, delimiter=';')
+			#create a list containing the csv's rows 
+			emisinv=[]
+			for row in reader:
+				#print row
+				emisinv.append(row)
+			ifile.close()
+			del(row,reader,ifile)
+			#get lats, lons, units and values from the inventory file
+			emisinv_lon = np.array([np.float(emisinv[ii][4]) for ii in list(range(startind,len(emisinv)))])
+			emisinv_lat = np.array([np.float(emisinv[ii][5]) for ii in list(range(startind,len(emisinv)))])
+			emisinv_unit = [emisinv[ii][6] for ii in list(range(startind,len(emisinv)))]
+			emisinv_value = np.array([np.float(emisinv[ii][7]) for ii in list(range(startind,len(emisinv)))])
+			#search nearest neighbour cell in the EMEP grid
+			distances = [haversine(tarlon[ll],tarlat[ll],emisinv_lon[ii],emisinv_lat[ii]) for ii in list(range(len(emisinv_lon)))]
+			distances = np.array(distances)
+			mindist = np.min(distances)
+			mindist_id = np.argmin(distances)
+			#change emission flux for the identified nearest neighbour
+			tarval = np.float(emisinv[5+mindist_id][7])*scalefactor[aa]
+			print(str(ll)+'. Changing emission flux from')
+			print(emisinv[5+mindist_id])
+			emisinv[5+mindist_id][7] = str(tarval)
+			print('to')
+			print(emisinv[5+mindist_id])
+			
+			#then save the results in txt format
+			outputfile = srcpath+'/'+emisfolder+'/'+variables[vv]+'_'+str(makeyear)+'_GRID_'+str(validyear)+'/modified_'+variables[vv]+'_'+activities[aa]+'_'+str(makeyear)+'_GRID_'+str(validyear)+'.txt'
+			dataframe = pd.DataFrame(emisinv)
+			dataframe.to_csv(outputfile,index=False,header=False,sep=';')
