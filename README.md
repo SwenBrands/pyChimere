@@ -8,7 +8,7 @@ provided by C-IFS, visualiztion software, and scripts to merge
 anthropogenic emssions from the EMEP inventory with point-wise PRTR
 emission sources gathered by the Galician Government (Xunta de Galicia).
 
-Author: Swen Brands, brandssf@ifcan.unican.es or swen.brands@gmail.com
+Author: Swen Brands, brandssf@ifca.unican.es or swen.brands@gmail.com
 
 Reference article:  https://doi.org/10.5194/gmd-13-3947-2020
 
