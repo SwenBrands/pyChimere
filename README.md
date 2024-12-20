@@ -48,5 +48,5 @@ Credits
 -------
 This ongoing research line is being funded by Xunta de Galicia.
 
-![alt text](https://www.xunta.gal/ficheiros/identidade-corporativa/2021/simbolos/simbolo-positivo.svg){width=30% height=30%}
+![alt text](https://www.xunta.gal/ficheiros/identidade-corporativa/2021/simbolos/simbolo-positivo.svg){: style="width:20%;height:20%;" }
 
